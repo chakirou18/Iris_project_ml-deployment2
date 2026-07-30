@@ -7,39 +7,45 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  GKE_CLUSTER: "my-cluster"
-  GKE_REGION: "us-central1"
-  DEPLOYMENT_NAME: "mlops-app"
-  REPOSITORY: "europe-west9-docker.pkg.dev/project-ff8a41de-e8de-4da0-92e/my-repo"
-  IMAGE: "europe-west9-docker.pkg.dev/project-ff8a41de-e8de-4da0-92e/my-repo/mlops-app"
+  GKE_CLUSTER: my-cluster
+  GKE_REGION: us-central1
+  DEPLOYMENT_NAME: mlops-app
+  IMAGE: europe-west9-docker.pkg.dev/project-ff8a41de-e8de-4da0-92e/my-repo/mlops-app
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    container:
-      image: google/cloud-sdk:latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Authenticate with Google Cloud
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Configure GCloud
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker Authentication
         run: |
           gcloud config set project $PROJECT_ID
-          gcloud auth configure-docker europe-west9-docker.pkg.dev
+          gcloud auth configure-docker europe-west9-docker.pkg.dev --quiet
 
-      - name: Build and Push Docker Image
+      - name: Build Docker Image
         run: |
           docker build -t $IMAGE:$GITHUB_SHA .
+
+      - name: Push Docker Image
+        run: |
           docker push $IMAGE:$GITHUB_SHA
 
-      - name: Configure GKE
+      - name: Configure GKE Credentials
         run: |
           gcloud container clusters get-credentials $GKE_CLUSTER \
             --region $GKE_REGION \
@@ -48,4 +54,5 @@ jobs:
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes-deployment.yaml
-          kubectl set image deployment/$DEPLOYMENT_NAME $DEPLOYMENT_NAME=$IMAGE:$GITHUB_SHA
+          kubectl set image deployment/$DEPLOYMENT_NAME \
+            $DEPLOYMENT_NAME=$IMAGE:$GITHUB_SHA
