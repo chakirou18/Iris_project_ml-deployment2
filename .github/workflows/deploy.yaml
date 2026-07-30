@@ -32,7 +32,7 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker
+      - name: Configure Docker Authentication
         run: |
           gcloud config set project $PROJECT_ID
           gcloud auth configure-docker europe-west9-docker.pkg.dev --quiet
@@ -45,11 +45,12 @@ jobs:
         run: |
           docker push $IMAGE:$GITHUB_SHA
 
-      - name: Configure GKE Credentials
-        run: |
-          gcloud container clusters get-credentials $GKE_CLUSTER \
-            --region $GKE_REGION \
-            --project $PROJECT_ID
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_REGION }}
+          project_id: ${{ env.PROJECT_ID }}
 
       - name: Deploy to Kubernetes
         run: |
