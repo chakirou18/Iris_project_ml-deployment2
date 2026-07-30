@@ -32,7 +32,7 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker Authentication
+      - name: Configure Docker
         run: |
           gcloud config set project $PROJECT_ID
           gcloud auth configure-docker europe-west9-docker.pkg.dev --quiet
@@ -54,5 +54,6 @@ jobs:
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes-deployment.yaml
+
           kubectl set image deployment/$DEPLOYMENT_NAME \
             $DEPLOYMENT_NAME=$IMAGE:$GITHUB_SHA

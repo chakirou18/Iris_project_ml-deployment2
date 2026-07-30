@@ -1,65 +1,38 @@
-name: CI/CD Deployment to GKE
+apiVersion: apps/v1
+kind: Deployment
 
-on:
-  push:
-    branches:
-      - main
+metadata:
+  name: mlops-app
+  labels:
+    app: mlops-app
 
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  GKE_CLUSTER: my-cluster
-  GKE_REGION: us-central1
-  DEPLOYMENT_NAME: mlops-app
-  IMAGE: europe-west9-docker.pkg.dev/project-ff8a41de-e8de-4da0-92e/my-repo/mlops-app
+spec:
+  replicas: 1
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+  selector:
+    matchLabels:
+      app: mlops-app
 
-    permissions:
-      contents: read
-      id-token: write
+  template:
+    metadata:
+      labels:
+        app: mlops-app
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    spec:
+      containers:
+        - name: mlops-app
+          image: europe-west9-docker.pkg.dev/project-ff8a41de-e8de-4da0-92e/my-repo/mlops-app:latest
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          imagePullPolicy: Always
 
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+          ports:
+            - containerPort: 5000
 
-      - name: Install GKE Auth Plugin
-        run: |
-          gcloud components install gke-gcloud-auth-plugin --quiet
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
 
-      - name: Configure Docker
-        run: |
-          gcloud config set project $PROJECT_ID
-          gcloud auth configure-docker europe-west9-docker.pkg.dev --quiet
-
-      - name: Build Docker Image
-        run: |
-          docker build -t $IMAGE:$GITHUB_SHA .
-
-      - name: Push Docker Image
-        run: |
-          docker push $IMAGE:$GITHUB_SHA
-
-      - name: Configure GKE Credentials
-        run: |
-          export USE_GKE_GCLOUD_AUTH_PLUGIN=True
-          gcloud container clusters get-credentials \
-            $GKE_CLUSTER \
-            --region $GKE_REGION \
-            --project $PROJECT_ID
-
-      - name: Deploy to Kubernetes
-        run: |
-          kubectl apply -f kubernetes-deployment.yaml
-
-          kubectl set image deployment/$DEPLOYMENT_NAME \
-          $DEPLOYMENT_NAME=$IMAGE:$GITHUB_SHA
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
