@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: MLOPS-PROJECT-8
+Version: 0.1
+Author: Chakirou
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: scikit-learn
+Requires-Dist: flask
+Requires-Dist: joblib
+Requires-Dist: matplotlib
+Requires-Dist: seaborn
+Requires-Dist: mlflow
+Requires-Dist: kfp
+Requires-Dist: setuptools
+Dynamic: author
+Dynamic: requires-dist
