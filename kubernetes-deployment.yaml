@@ -22,7 +22,6 @@ spec:
       containers:
         - name: mlops-app
           image: europe-west9-docker.pkg.dev/project-ff8a41de-e8de-4da0-92e/my-repo/mlops-app:latest
-
           imagePullPolicy: Always
 
           ports:
@@ -30,9 +29,27 @@ spec:
 
           resources:
             requests:
-              memory: "256Mi"
               cpu: "250m"
+              memory: "256Mi"
 
             limits:
-              memory: "512Mi"
               cpu: "500m"
+              memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: mlops-app-service
+
+spec:
+  type: LoadBalancer
+
+  selector:
+    app: mlops-app
+
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
