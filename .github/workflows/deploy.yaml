@@ -17,36 +17,29 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      id-token: write
+    container:
+      image: google/cloud-sdk:latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker Authentication
+      - name: Configure GCloud
         run: |
           gcloud config set project $PROJECT_ID
-          gcloud auth configure-docker europe-west9-docker.pkg.dev --quiet
+          gcloud auth configure-docker europe-west9-docker.pkg.dev
 
-      - name: Build Docker Image
+      - name: Build and Push Docker Image
         run: |
           docker build -t $IMAGE:$GITHUB_SHA .
-
-      - name: Push Docker Image
-        run: |
           docker push $IMAGE:$GITHUB_SHA
 
-      - name: Configure GKE Credentials
+      - name: Configure GKE
         run: |
           gcloud container clusters get-credentials $GKE_CLUSTER \
             --region $GKE_REGION \
@@ -55,5 +48,4 @@ jobs:
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes-deployment.yaml
-          kubectl set image deployment/$DEPLOYMENT_NAME \
-            $DEPLOYMENT_NAME=$IMAGE:$GITHUB_SHA
+          kubectl set image deployment/$DEPLOYMENT_NAME $DEPLOYMENT_NAME=$IMAGE:$GITHUB_SHA
