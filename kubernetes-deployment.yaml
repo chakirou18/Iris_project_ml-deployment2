@@ -1,0 +1,65 @@
+name: CI/CD Deployment to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: my-cluster
+  GKE_REGION: us-central1
+  DEPLOYMENT_NAME: mlops-app
+  IMAGE: europe-west9-docker.pkg.dev/project-ff8a41de-e8de-4da0-92e/my-repo/mlops-app
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install GKE Auth Plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet
+
+      - name: Configure Docker
+        run: |
+          gcloud config set project $PROJECT_ID
+          gcloud auth configure-docker europe-west9-docker.pkg.dev --quiet
+
+      - name: Build Docker Image
+        run: |
+          docker build -t $IMAGE:$GITHUB_SHA .
+
+      - name: Push Docker Image
+        run: |
+          docker push $IMAGE:$GITHUB_SHA
+
+      - name: Configure GKE Credentials
+        run: |
+          export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+          gcloud container clusters get-credentials \
+            $GKE_CLUSTER \
+            --region $GKE_REGION \
+            --project $PROJECT_ID
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f kubernetes-deployment.yaml
+
+          kubectl set image deployment/$DEPLOYMENT_NAME \
+          $DEPLOYMENT_NAME=$IMAGE:$GITHUB_SHA
