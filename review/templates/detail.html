@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Incident details</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='review.css') }}">
+<main><a href="{{ url_for('index') }}">← All incidents</a>
+<h1>Incident {{ item.id }}</h1><p><strong>Model:</strong> {{ item.model_id }} —
+<strong>Severity:</strong> {{ item.severity }} — {{ item.category }}</p>
+<h2>Diagnostic evidence</h2><pre>{{ item.diagnosis | tojson(indent=2) }}</pre>
+<h2>Recommendations</h2><pre>{{ item.recommendations | tojson(indent=2) }}</pre>
+<h2>Decision history</h2><table><tr><th>When</th><th>Actor</th><th>Decision</th><th>Comment</th></tr>
+{% for decision in item.decisions %}<tr><td>{{ decision.created_at }}</td><td>{{ decision.actor }}</td><td>{{ decision.decision }}</td><td>{{ decision.comment }}</td></tr>
+{% else %}<tr><td colspan="4">No decision recorded</td></tr>{% endfor %}</table>
+{% if item.category == 'data_drift' and (not item.decisions or item.decisions[-1].decision == 'request_information') %}
+<h2>Record a human decision</h2>
+<form action="{{ url_for('decision', incident_id=item.id) }}" method="post">
+<input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<label>Decision <select name="decision" required>
+<option value="request_information">Request additional information</option>
+<option value="approve">Approve recommendation for future planning (no execution)</option>
+<option value="reject">Reject</option></select></label>
+<label>Rationale <textarea name="comment" required maxlength="1000"></textarea></label>
+<button type="submit">Record decision</button></form>
+{% else %}<p>No further changes permitted for this incident.</p>{% endif %}
+<p><strong>Safety:</strong> Approval is an audit record, not deployment authorization.</p>
+</main></html>
