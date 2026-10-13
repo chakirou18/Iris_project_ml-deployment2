@@ -1,0 +1,22 @@
+name: Reviewer UX regression tests
+on:
+  push:
+    branches: [feature/iris-review-ui-refresh]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install lightweight interface test dependencies
+        run: python -m pip install "flask>=3,<4" "pytest>=8,<10"
+      - name: Syntax check and regression suite
+        run: |
+          python -m compileall -q review tests
+          python -m pytest -q tests/test_review.py tests/test_review_preview.py tests/test_review_ui.py
