@@ -11,7 +11,7 @@ write-capable tool is wired to this interface.
 Install the minimal dependencies from a trusted environment:
 
 ```bash
-python -m pip install "flask>=3,<4"
+python -m pip install -r requirements-agents.txt
 python -m review.setup_credentials
 ```
 
