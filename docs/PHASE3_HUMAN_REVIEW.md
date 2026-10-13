@@ -17,22 +17,24 @@ python -m review.setup_credentials
 
 The command prints a randomly generated one-time local reviewer password and
 writes a salted password hash plus session secret into
-`data/review_credentials.env` (excluded from Git). Load this file into
-your shell as environment variables using an appropriate local secret manager;
-do not commit or paste the credentials into GitHub Actions logs. Never source
+`data/review_credentials.env` (excluded from Git). Load this file into your shell as environment variables using an appropriate
+local secret manager; do not commit or paste the credentials into GitHub
+Actions logs. For local PowerShell only, after reviewing the generated file,
+you can use:\n\n```powershell\nGet-Content data/review_credentials.env | ForEach-Object {\n  $key, $value = $_ -split '=', 2\n  [Environment]::SetEnvironmentVariable($key, $value, 'Process')\n}\n``` Never source
 an untrusted environment file.
 
-First produce an incident using the LangGraph workflow, then import it:
+First produce a compatible review incident using the read-only LangGraph workflow, then import it:
 
 ```bash
-python -m agents.diagnostic_graph --summary data/reports/iris_drift_summary.json
-python -m review.import_incident --input data/reports/iris_incident.json
+python -m review.prepare_incident --summary data/reports/iris_drift_summary.json
+python -m review.import_incident --input data/reports/iris_review_ready.json
 python -m review.app
 ```
 
-For the newer agent workflow in `agents/llm_workflow.py`, save its structured
-output as JSON and import that file instead. The import CLI has no network
-listener and applies validation.
+The incident preparation command uses the phase-3 read-only LangGraph workflow,
+without contacting a real LLM or Prometheus. The import CLI has no network
+listener and applies validation. The legacy `agents.diagnostic_graph` JSON
+format is not directly importable.
 
 Open http://127.0.0.1:5050/login. Authenticate with the generated reviewer
 password. The interface allows decisions and shows history.
