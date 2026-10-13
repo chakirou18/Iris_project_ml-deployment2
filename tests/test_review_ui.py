@@ -1,7 +1,7 @@
 """UI regression tests: semantic presentation and secure review behavior."""
 from review.view_models import counts, filter_incidents, decorate_detail, formatted_date
 from review.store import get_incident
-from tests.test_review import login, csrf
+from tests.test_review import login, csrf, client  # noqa: F401 - pytest fixture
 
 
 def test_dashboard_stats_and_filters(client):
