@@ -1,0 +1,57 @@
+name: Phase 2 Docker integration
+on:
+  push:
+    branches:
+      - feature/iris-monitoring-phase2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iris-phase2-docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Python for local setup and smoke tests
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Initialize disposable CI-only credentials
+        run: python scripts/setup_monitoring_env.py
+      - name: Check Compose configuration
+        run: docker compose -f docker-compose.monitoring.yml config -q
+      - name: Start isolated Docker stack
+        run: docker compose -f docker-compose.monitoring.yml up --build -d
+      - name: Confirm services, scrapes and dashboard
+        run: python scripts/check_monitoring_stack.py --check services
+      - name: Generate baseline traffic
+        run: |
+          docker compose -f docker-compose.monitoring.yml exec -T iris python -m scripts.generate_monitoring_traffic --scenario baseline --count 120
+          docker compose -f docker-compose.monitoring.yml exec -T evidently python -m monitoring.drift_worker --once
+      - name: Verify Evidently report and Prometheus metrics
+        run: python scripts/check_monitoring_stack.py --check baseline
+      - name: Isolate new demo sample
+        run: |
+          docker compose -f docker-compose.monitoring.yml exec -T iris python -c "from pathlib import Path; Path('/app/data/predictions.jsonl').unlink(missing_ok=True)"
+          docker compose -f docker-compose.monitoring.yml exec -T evidently python -c "from pathlib import Path; root=Path('/app/data/reports'); [(root/name).unlink(missing_ok=True) for name in ('iris_drift.html', 'iris_drift.json')]"
+      - name: Generate shifted synthetic traffic
+        run: |
+          docker compose -f docker-compose.monitoring.yml exec -T iris python -m scripts.generate_monitoring_traffic --scenario drift --count 120
+          docker compose -f docker-compose.monitoring.yml exec -T evidently python -m monitoring.drift_worker --once
+      - name: Verify injected drift
+        run: python scripts/check_monitoring_stack.py --check drift
+      - name: Report container status and logs on failure
+        if: failure()
+        run: |
+          docker compose -f docker-compose.monitoring.yml ps
+          docker compose -f docker-compose.monitoring.yml logs --no-color --tail=120
+      - name: Tear down disposable services
+        if: always()
+        run: docker compose -f docker-compose.monitoring.yml down -v --remove-orphans
