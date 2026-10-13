@@ -28,6 +28,7 @@ services:
     image: prom/prometheus:v3.7.0
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - ./monitoring/secrets/metrics_token:/etc/prometheus/metrics_token:ro
       - prometheus-data:/prometheus
     ports:
