@@ -1,0 +1,23 @@
+name: Phase 3 agent diagnostics tests
+on:
+  push:
+    branches:
+      - feature/iris-agentic-diagnostics-phase3
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install LangGraph
+        run: python -m pip install "langgraph>=0.6,<2" pytest
+      - name: Check syntax and agent tests
+        run: |
+          python -m compileall -q agents
+          python -m pytest -q tests/test_agent_diagnostics.py
