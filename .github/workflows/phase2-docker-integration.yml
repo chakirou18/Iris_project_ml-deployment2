@@ -40,7 +40,7 @@ jobs:
       - name: Isolate new demo sample
         run: |
           docker compose -f docker-compose.monitoring.yml exec -T iris python -c "from pathlib import Path; Path('/app/data/predictions.jsonl').unlink(missing_ok=True)"
-          rm -f data/reports/iris_drift.html data/reports/iris_drift.json
+          docker compose -f docker-compose.monitoring.yml exec -T evidently python -c "from pathlib import Path; root=Path('/app/data/reports'); [(root/name).unlink(missing_ok=True) for name in ('iris_drift.html', 'iris_drift.json')]"
       - name: Generate shifted synthetic traffic
         run: |
           docker compose -f docker-compose.monitoring.yml exec -T iris python -m scripts.generate_monitoring_traffic --scenario drift --count 120
