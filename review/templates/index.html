@@ -1,13 +1,26 @@
-<!doctype html>
-<html lang="en"><meta charset="utf-8"><title>Monitoring incidents</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='review.css') }}">
-<main><header><h1>ML Monitoring — Incident Review</h1>
-<form action="{{ url_for('logout') }}" method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button>Log out</button></form></header>
-<p>Decisions are recorded for review only. No model modifications or deployments.</p>
-<table><thead><tr><th>Model</th><th>Category</th><th>Severity</th><th>Decision</th><th>Date</th><th>Review</th></tr></thead><tbody>
-{% for incident in incidents %}
-<tr><td>{{ incident.model_id }}</td><td>{{ incident.category }}</td><td>{{ incident.severity }}</td>
-<td>{{ incident.last_decision or "pending" }}</td><td>{{ incident.created_at }}</td>
-<td><a href="{{ url_for('detail',incident_id=incident.id) }}">Open</a></td></tr>
-{% else %}<tr><td colspan="6">No incidents imported yet.</td></tr>{% endfor %}
-</tbody></table></main></html>
+{% extends "base.html" %}{% block title %}Incidents — PulseML{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">TABLEAU DE BORD</span><h1>Centre de surveillance</h1><p class="muted">Suivez les incidents et prenez des décisions éclairées sur vos modèles.</p></div><span class="environment">● Environnement local</span></div>
+<section class="stats-grid" aria-label="Résumé des incidents">
+<div class="stat"><div class="stat-top"><span>Incidents enregistrés</span><span class="stat-icon blue">◫</span></div><strong>{{ summary.total }}</strong><small>Historique disponible</small></div>
+<div class="stat"><div class="stat-top"><span>À examiner</span><span class="stat-icon amber">◷</span></div><strong>{{ summary.pending }}</strong><small>Nécessitent une attention</small></div>
+<div class="stat"><div class="stat-top"><span>Avis favorables</span><span class="stat-icon green">✓</span></div><strong>{{ summary.approved }}</strong><small>Aucune exécution associée</small></div>
+<div class="stat"><div class="stat-top"><span>Refusés</span><span class="stat-icon red">×</span></div><strong>{{ summary.rejected }}</strong><small>Décisions conservées</small></div>
+</section>
+<section class="panel"><div class="panel-heading"><div><h2>Incidents de monitoring</h2><p class="muted">Historique des anomalies et de leur revue.</p></div><span class="count">{{ incidents|length }} résultat(s)</span></div>
+<form class="filters" method="get" action="{{ url_for('index') }}">
+<label class="sr-only" for="q">Rechercher un incident</label><input id="q" name="q" maxlength="80" value="{{ search }}" placeholder="⌕  Rechercher un modèle ou un identifiant...">
+<label class="sr-only" for="status">Filtrer les statuts</label><select id="status" name="status">
+<option value="all" {% if active_status == 'all' %}selected{% endif %}>Tous les statuts</option>
+<option value="pending" {% if active_status == 'pending' %}selected{% endif %}>À examiner</option>
+<option value="approved" {% if active_status == 'approved' %}selected{% endif %}>Avis favorables</option>
+<option value="rejected" {% if active_status == 'rejected' %}selected{% endif %}>Refusés</option></select><button type="submit" class="button primary">Filtrer</button></form>
+<div class="table-scroll"><table><thead><tr><th>MODÈLE / INCIDENT</th><th>CATÉGORIE</th><th>SÉVÉRITÉ</th><th>STATUT</th><th>CRÉÉ LE</th><th></th></tr></thead>
+<tbody>{% for item in incidents %}<tr><td><strong>{{ item.model_id }}</strong><span class="subline">#{{ item.short_id }}</span></td><td>{{ item.category_label }}</td>
+<td><span class="pill {{ item.severity_css }}"><span class="dot">●</span>{{ item.severity_label }}</span></td>
+<td><span class="pill {{ item.status_css }}">{{ item.status_label }}</span></td>
+<td class="date">{{ item.date_display }}</td>
+<td><a class="detail-link" href="{{ url_for('detail', incident_id=item.id) }}">Examiner →</a></td></tr>
+{% else %}<tr><td class="empty" colspan="6"><strong>Aucun incident trouvé.</strong><p>Essayez un autre filtre ou attendez l'import d'un nouvel incident.</p></td></tr>{% endfor %}</tbody></table></div></section>
+<div class="safety-inline">ⓘ Cette console présente des décisions humaines. Aucun modèle n'est modifié ou déployé depuis cette interface.</div>
+{% endblock %}
