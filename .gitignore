@@ -1,3 +1,8 @@
 venv/
 MLOPS_PROJECT_8.egg-info/
 logs/
+data/
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
