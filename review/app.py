@@ -10,6 +10,7 @@ from werkzeug.security import check_password_hash
 from review.store import init_db, list_incidents, get_incident, record_decision
 from review.view_models import counts, filter_incidents, decorate_detail
 from remediation.store import init_remediation_db, plans_for_incident, can_plan, propose_plan, decide_plan
+from agents.incident_analysis import init_analysis_db, latest_analysis, analyze_incident
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,6 +32,7 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
     app.config["REVIEW_DB_PATH"] = database
     init_db(database)
     init_remediation_db(database)
+    init_analysis_db(database)
 
     @app.after_request
     def secure_headers(response):
@@ -97,7 +99,9 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
             abort(404)
         return render_template("detail.html", item=decorate_detail(incident),
                                remediation_plans=plans_for_incident(database, incident_id),
-                               can_propose_remediation=can_plan(incident), message=None)
+                               can_propose_remediation=can_plan(incident),
+                               analysis=latest_analysis(database, incident_id),
+                               llm_enabled=os.getenv('PULSEML_ENABLE_LLM', '').lower() == 'true', message=None)
 
     @app.post("/incidents/<incident_id>/decision")
     @authenticated
@@ -129,6 +133,21 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
                         request.form.get("decision"), request.form.get("confirmation"))
         except ValueError:
             abort(400)
+        return redirect(url_for("detail", incident_id=incident_id))
+
+    @app.post("/incidents/<incident_id>/ai-analyze")
+    @authenticated
+    def ai_analyze(incident_id):
+        require_csrf()
+        if os.getenv("PULSEML_ENABLE_LLM", "").lower() != "true":
+            abort(403)
+        if get_incident(database, incident_id) is None:
+            abort(404)
+        try:
+            analyze_incident(database, incident_id)
+        except (RuntimeError, ValueError, TimeoutError):
+            # No secrets or raw provider exception contents in browser.
+            abort(503, description="Analyse momentanément indisponible.")
         return redirect(url_for("detail", incident_id=incident_id))
 
     return app
