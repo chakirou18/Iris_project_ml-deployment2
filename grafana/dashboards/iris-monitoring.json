@@ -161,6 +161,111 @@
           "expr": "iris_drift_window_samples"
         }
       ]
+    },
+    {
+      "id": 8,
+      "title": "Drifted features count",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "iris_drifted_features_count"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Share of features drifting",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "iris_drift_share"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Drift detected per feature",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "iris_feature_drift"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "KS p-values per feature",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "iris_feature_ks_pvalue"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Active Prometheus alerts",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(ALERTS{alertstate=\"firing\"})"
+        }
+      ]
     }
   ]
 }
