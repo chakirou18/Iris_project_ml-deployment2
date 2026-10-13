@@ -13,11 +13,17 @@ STATUS = {
 }
 SEVERITY = {
     "warning": ("Attention", "warning"),
+    "critical": ("Critique", "rejected"),
     "info": ("Information", "informational"),
 }
 CATEGORY = {
     "data_drift": "Dérive des données",
     "no_drift_detected": "Aucune dérive détectée",
+    "service_unavailable": "Service indisponible",
+    "monitoring_unavailable": "Monitoring indisponible",
+    "monitoring_failed": "Analyse échouée",
+    "prediction_errors": "Erreurs de prédiction",
+    "prediction_latency": "Latence excessive",
 }
 DECISION = {
     "approve": "Avis favorable",
@@ -65,7 +71,7 @@ def decorate_detail(incident):
         **decorate_incident(dict(item, last_decision=last)),
         is_demo=item.get("evidence", {}).get("source") == "synthetic_local_preview",
         can_review=(
-            item.get("category") == "data_drift"
+            item.get("category") not in ("no_drift_detected", None)
             and last not in ("approve", "reject")
         ),
     )
@@ -90,7 +96,7 @@ def filter_incidents(incidents, query="", status="all"):
     filtered = []
     for incident in incidents:
         decision = incident.get("last_decision")
-        category = incident.get("category") == "data_drift"
+        category = incident.get("category") not in ("no_drift_detected", None)
         if status == "pending" and (decision in ("approve", "reject") or not category):
             continue
         if status == "approved" and decision != "approve":

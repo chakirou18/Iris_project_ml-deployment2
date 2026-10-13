@@ -36,6 +36,21 @@ services:
     depends_on:
       - iris
       - evidently
+  incident-ingestor:
+    build:
+      context: .
+      dockerfile: Dockerfile.monitoring
+    command: ["python", "-m", "monitoring.incident_ingestor"]
+    environment:
+      REVIEW_DB_PATH: /app/data/review.sqlite3
+      DRIFT_SUMMARY_PATH: /app/data/reports/iris_drift_summary.json
+      INCIDENT_POLL_SECONDS: "30"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - evidently
+      - prometheus
+    restart: unless-stopped
   grafana:
     image: grafana/grafana:12.2.0
     environment:
