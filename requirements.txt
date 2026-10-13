@@ -1,10 +1,11 @@
 pandas
 numpy
 scikit-learn
-flask 
+flask
 joblib
 matplotlib
 seaborn
 mlflow
 kfp
 setuptools
+prometheus-client
