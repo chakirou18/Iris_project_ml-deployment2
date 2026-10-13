@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Monitoring incidents</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='review.css') }}">
+<main><header><h1>ML Monitoring — Incident Review</h1>
+<form action="{{ url_for('logout') }}" method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button>Log out</button></form></header>
+<p>Decisions are recorded for review only. No model modifications or deployments.</p>
+<table><thead><tr><th>Model</th><th>Category</th><th>Severity</th><th>Decision</th><th>Date</th><th>Review</th></tr></thead><tbody>
+{% for incident in incidents %}
+<tr><td>{{ incident.model_id }}</td><td>{{ incident.category }}</td><td>{{ incident.severity }}</td>
+<td>{{ incident.last_decision or "pending" }}</td><td>{{ incident.created_at }}</td>
+<td><a href="{{ url_for('detail',incident_id=incident.id) }}">Open</a></td></tr>
+{% else %}<tr><td colspan="6">No incidents imported yet.</td></tr>{% endfor %}
+</tbody></table></main></html>
