@@ -1,0 +1,22 @@
+name: Phase 3 LLM diagnostic tests
+on:
+  push:
+    branches: [feature/iris-agentic-llm-phase3]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install narrow test dependencies
+        run: python -m pip install "langgraph>=0.6,<2" "pydantic>=2,<3" pytest
+      - name: Compile and run mocked LLM tests
+        run: |
+          python -m compileall -q agents
+          python -m pytest -q tests/test_agent_diagnostics.py tests/test_llm_workflow.py
