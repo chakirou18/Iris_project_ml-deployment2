@@ -4,6 +4,8 @@ COPY requirements-monitoring.txt .
 RUN pip install --no-cache-dir -r requirements-monitoring.txt
 COPY application.py .
 COPY monitoring/ monitoring/
+COPY agents/ agents/
+COPY review/ review/
 COPY scripts/ scripts/
 COPY templates/ templates/
 COPY static/ static/
