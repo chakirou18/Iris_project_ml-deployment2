@@ -1,0 +1,2 @@
+-r requirements-monitoring.txt
+langgraph>=0.6,<2
