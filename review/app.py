@@ -9,6 +9,7 @@ from werkzeug.security import check_password_hash
 
 from review.store import init_db, list_incidents, get_incident, record_decision
 from review.view_models import counts, filter_incidents, decorate_detail
+from remediation.store import init_remediation_db, plans_for_incident, can_plan, propose_plan, decide_plan
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,6 +30,7 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
     )
     app.config["REVIEW_DB_PATH"] = database
     init_db(database)
+    init_remediation_db(database)
 
     @app.after_request
     def secure_headers(response):
@@ -93,7 +95,9 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
         incident = get_incident(database, incident_id)
         if incident is None:
             abort(404)
-        return render_template("detail.html", item=decorate_detail(incident), message=None)
+        return render_template("detail.html", item=decorate_detail(incident),
+                               remediation_plans=plans_for_incident(database, incident_id),
+                               can_propose_remediation=can_plan(incident), message=None)
 
     @app.post("/incidents/<incident_id>/decision")
     @authenticated
@@ -102,6 +106,27 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
         try:
             record_decision(database, incident_id, session["actor"],
                             request.form.get("decision"), request.form.get("comment", ""))
+        except ValueError:
+            abort(400)
+        return redirect(url_for("detail", incident_id=incident_id))
+
+    @app.post("/incidents/<incident_id>/remediation/propose")
+    @authenticated
+    def remediation_propose(incident_id):
+        require_csrf()
+        try:
+            propose_plan(database, incident_id, session["actor"])
+        except ValueError:
+            abort(400)
+        return redirect(url_for("detail", incident_id=incident_id))
+
+    @app.post("/incidents/<incident_id>/remediation/<plan_id>/decision")
+    @authenticated
+    def remediation_decision(incident_id, plan_id):
+        require_csrf()
+        try:
+            decide_plan(database, incident_id, plan_id, session["actor"],
+                        request.form.get("decision"), request.form.get("confirmation"))
         except ValueError:
             abort(400)
         return redirect(url_for("detail", incident_id=incident_id))
