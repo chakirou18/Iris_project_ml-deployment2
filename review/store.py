@@ -40,9 +40,12 @@ def import_incident(path, incident):
     recommendations = incident.get("recommendations", [])
     if not isinstance(details, dict) or details.get("model_id") != "iris-classifier":
         raise ValueError("Unknown incident model")
-    if details.get("category") not in ("data_drift", "no_drift_detected"):
+    if details.get("category") not in ("data_drift", "no_drift_detected",
+                                     "service_unavailable", "monitoring_unavailable",
+                                     "monitoring_failed", "prediction_errors",
+                                     "prediction_latency"):
         raise ValueError("Unknown incident category")
-    if details.get("severity") not in ("warning", "info"):
+    if details.get("severity") not in ("warning", "info", "critical"):
         raise ValueError("Unknown incident severity")
     if not isinstance(diagnosis, dict) or not isinstance(recommendations, list):
         raise ValueError("Malformed incident")
