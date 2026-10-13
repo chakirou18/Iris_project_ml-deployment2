@@ -95,6 +95,10 @@ def verify_baseline():
         payload = json.loads(result.read_text(encoding="utf-8"))
         assert isinstance(payload.get("metrics"), list) and payload["metrics"]
         assert prometheus_query("iris_drift_evaluation_status") == 1.0
+        assert 0 <= prometheus_query("iris_drift_share") <= 1
+        summary = ROOT / "data/reports/iris_drift_summary.json"
+        assert summary.is_file()
+        assert "features" in json.loads(summary.read_text(encoding="utf-8"))
     poll(check_report, "Evidently baseline HTML/JSON report and successful scrape", timeout=90)
 
 
@@ -119,6 +123,9 @@ def verify_drift():
         count = float(summaries[0]["value"]["count"])
         assert count >= 1, "Injected petal-length shift not detected"
         assert prometheus_query("iris_drift_evaluation_status") == 1.0
+        assert prometheus_query("iris_drifted_features_count") >= 1
+        assert prometheus_query('iris_feature_drift{feature="PetalLengthCm"}') == 1
+        assert prometheus_query('iris_feature_ks_pvalue{feature="PetalLengthCm"}') < 0.05
     poll(check_detected, "Injected drift detected in Evidently report", timeout=90)
 
 
