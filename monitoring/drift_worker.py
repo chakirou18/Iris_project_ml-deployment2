@@ -1,4 +1,5 @@
 """Run periodic Evidently checks and expose Prometheus status metrics."""
+import argparse
 import logging
 import os
 import time
@@ -32,7 +33,13 @@ def run_check():
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--once", action="store_true")
+    args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
+    if args.once:
+        run_check()
+        return
     port = int(os.getenv("DRIFT_EXPORTER_PORT", "8001"))
     interval = max(15, int(os.getenv("DRIFT_EVALUATION_INTERVAL_SECONDS", "30")))
     start_http_server(port)
