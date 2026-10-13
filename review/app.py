@@ -8,6 +8,7 @@ from flask import Flask, abort, redirect, render_template, request, session, url
 from werkzeug.security import check_password_hash
 
 from review.store import init_db, list_incidents, get_incident, record_decision
+from review.view_models import counts, filter_incidents, decorate_detail
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -62,7 +63,7 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
             require_csrf()
             password = request.form.get("password", "")
             if not check_password_hash(password_hash, password):
-                return render_template("login.html", error="Incorrect credentials"), 401
+                return render_template("login.html", error="Mot de passe incorrect."), 401
             session.clear()
             session["authenticated"] = True
             session["actor"] = "local-reviewer"
@@ -80,7 +81,11 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
     @app.get("/")
     @authenticated
     def index():
-        return render_template("index.html", incidents=list_incidents(database))
+        all_incidents = list_incidents(database)
+        return render_template("index.html", incidents=filter_incidents(
+            all_incidents, request.args.get("q", ""), request.args.get("status", "all")
+        ), summary=counts(all_incidents), search=request.args.get("q", "")[:80],
+            active_status=request.args.get("status", "all"))
 
     @app.get("/incidents/<incident_id>")
     @authenticated
@@ -88,7 +93,7 @@ def create_app(*, database=None, password_hash=None, secret_key=None):
         incident = get_incident(database, incident_id)
         if incident is None:
             abort(404)
-        return render_template("detail.html", item=incident, message=None)
+        return render_template("detail.html", item=decorate_detail(incident), message=None)
 
     @app.post("/incidents/<incident_id>/decision")
     @authenticated

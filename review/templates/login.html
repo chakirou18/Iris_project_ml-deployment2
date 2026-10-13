@@ -1,8 +1,11 @@
-<!doctype html>
-<html lang="en"><meta charset="utf-8"><title>Monitoring review login</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='review.css') }}">
-<main><h1>ML Monitoring — Reviewer login</h1>
-{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion — PulseML</title><link rel="stylesheet" href="{{ url_for('static', filename='review.css') }}"></head>
+<body class="login-background"><main class="login-card"><div class="login-icon">◈</div>
+<div class="eyebrow">PLATEFORME D'OBSERVABILITÉ</div><h1>Bienvenue sur PulseML</h1>
+<p class="muted">Accédez à votre espace de surveillance et de validation des incidents Machine Learning.</p>
+{% if error %}<div class="error-notice" role="alert">{{ error }}</div>{% endif %}
 <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
-<label>Password <input type="password" name="password" autocomplete="current-password" required></label>
-<button type="submit">Log in</button></form></main></html>
+<label for="password">Mot de passe du réviseur</label><input id="password" type="password" name="password" autocomplete="current-password" placeholder="Votre mot de passe local" required autofocus>
+<button class="button primary full" type="submit">Accéder à mon espace →</button></form>
+<div class="login-foot">🔒 Accès local uniquement · Aucune modification en production</div>
+</main></body></html>

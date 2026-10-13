@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}ML Monitor{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='review.css') }}"></head>
+<body><div class="app-shell">
+<aside class="sidebar">
+<a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">◈</span><span>Pulse<span class="brand-light">ML</span><small>Observabilité intelligente</small></span></a>
+<div class="menu-caption">ESPACE DE TRAVAIL</div>
+<a class="nav-link {% if request.endpoint == 'index' %}current{% endif %}" href="{{ url_for('index') }}">◫ <span>Vue d'ensemble</span></a>
+<a class="nav-link {% if request.endpoint == 'detail' %}current{% endif %}" href="{{ url_for('index', status='pending') }}">◷ <span>Incidents à examiner</span></a>
+<div class="sidebar-bottom"><span class="pulse-dot"></span> Démonstration locale <p>Les validations ne déclenchent aucune action sur les modèles.</p></div>
+</aside>
+<div class="workspace"><header class="topbar">
+<div><span class="eyebrow">WORKSPACE / SURVEILLANCE ML</span><div class="topbar-caption">{% block location %}Supervision des incidents{% endblock %}</div></div>
+<div class="top-actions"><span class="user-avatar">R</span><span class="reviewer">Réviseur local</span>
+<form action="{{ url_for('logout') }}" method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="button subtle" type="submit">Déconnexion</button></form></div>
+</header><main class="content">{% block content %}{% endblock %}</main>
+<footer class="footer">PulseML · Prototype local sécurisé · Aucune exécution automatique</footer></div>
+</div></body></html>

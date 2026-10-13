@@ -1,24 +1,44 @@
-<!doctype html>
-<html lang="en"><meta charset="utf-8"><title>Incident details</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='review.css') }}">
-<main><a href="{{ url_for('index') }}">← All incidents</a>
-<h1>Incident {{ item.id }}</h1><p><strong>Model:</strong> {{ item.model_id }} —
-<strong>Severity:</strong> {{ item.severity }} — {{ item.category }}</p>
-<h2>Diagnostic evidence</h2><pre>{{ item.diagnosis | tojson(indent=2) }}</pre>
-<h2>Recommendations</h2><pre>{{ item.recommendations | tojson(indent=2) }}</pre>
-<h2>Decision history</h2><table><tr><th>When</th><th>Actor</th><th>Decision</th><th>Comment</th></tr>
-{% for decision in item.decisions %}<tr><td>{{ decision.created_at }}</td><td>{{ decision.actor }}</td><td>{{ decision.decision }}</td><td>{{ decision.comment }}</td></tr>
-{% else %}<tr><td colspan="4">No decision recorded</td></tr>{% endfor %}</table>
-{% if item.category == 'data_drift' and (not item.decisions or item.decisions[-1].decision == 'request_information') %}
-<h2>Record a human decision</h2>
-<form action="{{ url_for('decision', incident_id=item.id) }}" method="post">
+{% extends "base.html" %}{% block title %}Incident {{ item.id[:8] }} — PulseML{% endblock %}
+{% block location %}Détail et décision sur incident{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('index') }}">← Retour aux incidents</a>
+<div class="page-heading"><div><span class="eyebrow">FICHE D'INCIDENT · #{{ item.short_id }}</span><h1>Dérive des données{% if item.category != 'data_drift' %} · {{ item.category_label }}{% endif %}</h1>
+<p class="muted">Analyse et recommandations pour <strong>{{ item.model_id }}</strong>.</p></div>
+<span class="pill {{ item.status_css }} prominent">{{ item.status_label }}</span></div>
+{% if item.is_demo %}<div class="demo-banner">ⓘ <strong>Incident de démonstration</strong> — Les données et recommandations ci-dessous sont fictives. Aucun diagnostic réel n'a été effectué.</div>{% endif %}
+<section class="meta-grid"><div class="meta-item"><span>MODÈLE</span><strong>{{ item.model_id }}</strong></div>
+<div class="meta-item"><span>CATÉGORIE</span><strong>{{ item.category_label }}</strong></div>
+<div class="meta-item"><span>CRITICITÉ</span><strong><span class="pill {{ item.severity_css }}">{{ item.severity_label }}</span></strong></div>
+<div class="meta-item"><span>DATE D'OUVERTURE</span><strong>{{ item.date_display }}</strong></div></section>
+<div class="details-grid"><div class="details-primary">
+<section class="panel padded"><div class="section-title"><span class="section-icon blue">◎</span><div><h2>Diagnostic</h2><p class="muted">Éléments disponibles pour comprendre l'incident</p></div></div>
+<div class="diagnostic-highlight"><span class="eyebrow">OBSERVATION PRINCIPALE</span><p>{{ item.diagnosis.get('observation', item.diagnosis.get('observations', 'Aucune observation renseignée.')) }}</p></div>
+<div class="info-row"><span>Variables concernées</span><div class="chip-group">
+{% for feature in item.diagnosis.get('affected_features', []) %}<span class="feature-chip">{{ feature }}</span>
+{% else %}<span class="muted">Aucune variable identifiée</span>{% endfor %}</div></div>
+{% if item.diagnosis.get('possible_causes') %}<div class="info-row"><span>Causes possibles</span><ul class="cause-list">{% for cause in item.diagnosis.possible_causes %}<li>{{ cause }}</li>{% endfor %}</ul></div>{% endif %}
+{% if item.diagnosis.get('limitations') %}<div class="limit-note"><strong>Limites de l'analyse</strong><p>{{ item.diagnosis.limitations }}</p></div>{% endif %}
+</section>
+<section class="panel padded"><div class="section-title"><span class="section-icon violet">✧</span><div><h2>Recommandations</h2><p class="muted">Actions proposées, sans exécution automatique</p></div></div>
+<div class="recommendation-list">{% for rec in item.recommendations %}
+<article class="recommendation"><div class="recommendation-index">{{ loop.index }}</div><div><h3>{{ rec.get('action', 'Action à examiner') }}</h3>
+<p class="muted">Proposition de vérification ou d'amélioration du modèle.</p>
+<div class="rec-tags"><span class="pill pending">Validation humaine requise</span><span class="pill neutral">Non exécutée</span></div></div></article>
+{% else %}<div class="empty-recommendation">Aucune action recommandée pour cet incident.</div>{% endfor %}</div></section>
+<section class="panel padded"><div class="section-title"><span class="section-icon blue">◷</span><div><h2>Historique des décisions</h2><p class="muted">Traçabilité des avis du réviseur</p></div></div>
+<div class="timeline">{% for decision in item.decisions %}<div class="timeline-entry"><div class="timeline-marker"></div><div class="timeline-body"><div class="timeline-head"><span class="pill {{ decision.css }}">{{ decision.label }}</span><span class="muted">{{ decision.date_display }}</span></div>
+<p>{{ decision.comment }}</p><small>Décision enregistrée par {{ decision.actor }}</small></div></div>
+{% else %}<div class="empty-recommendation">Aucune décision enregistrée pour le moment.</div>{% endfor %}</div></section></div>
+<aside class="review-aside"><section class="panel padded sticky-review"><h2>Décision humaine</h2>
+<p class="muted">Examinez les éléments avant d'enregistrer votre avis.</p>
+{% if item.can_review %}<form method="post" action="{{ url_for('decision',incident_id=item.id) }}">
 <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-<label>Decision <select name="decision" required>
-<option value="request_information">Request additional information</option>
-<option value="approve">Approve recommendation for future planning (no execution)</option>
-<option value="reject">Reject</option></select></label>
-<label>Rationale <textarea name="comment" required maxlength="1000"></textarea></label>
-<button type="submit">Record decision</button></form>
-{% else %}<p>No further changes permitted for this incident.</p>{% endif %}
-<p><strong>Safety:</strong> Approval is an audit record, not deployment authorization.</p>
-</main></html>
+<label class="field-label" for="decision">Votre décision</label>
+<select name="decision" id="decision" required><option value="request_information">Demander des précisions</option><option value="approve">Avis favorable</option><option value="reject">Refuser</option></select>
+<label class="field-label" for="comment">Justification <span class="required">*</span></label>
+<textarea name="comment" id="comment" required minlength="1" maxlength="1000" placeholder="Expliquez brièvement votre décision..."></textarea>
+<small class="field-hint">1 000 caractères maximum.</small>
+<button type="submit" class="button primary full">Enregistrer ma décision →</button></form>
+{% else %}<div class="finished"><strong>Revue terminée</strong><p>La décision finale est conservée dans l'historique. Aucune modification supplémentaire n'est autorisée.</p></div>{% endif %}
+<div class="approval-note"><strong>Protection active</strong><p>Un avis favorable n'autorise ni un réentraînement, ni un déploiement, ni une correction.</p></div></section></aside></div>
+{% endblock %}
