@@ -25,6 +25,36 @@
 <p class="muted">Proposition de vérification ou d'amélioration du modèle.</p>
 <div class="rec-tags"><span class="pill pending">Validation humaine requise</span><span class="pill neutral">Non exécutée</span></div></div></article>
 {% else %}<div class="empty-recommendation">Aucune action recommandée pour cet incident.</div>{% endfor %}</div></section>
+<section class="panel padded" id="remediation"><div class="section-title"><span class="section-icon violet">⚙</span>
+<div><h2>Remédiation supervisée</h2><p class="muted">Évaluation hors production uniquement · Aucun changement appliqué au modèle</p></div></div>
+{% if can_propose_remediation %}
+{% if not remediation_plans %}
+<p>Le rapport statistique est admissible pour préparer un test de candidat isolé. Un drift seul ne prouve pas une baisse de précision.</p>
+<form method="post" action="{{ url_for('remediation_propose', incident_id=item.id) }}">
+<input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<button type="submit" class="button primary">Préparer un plan d'évaluation hors production</button>
+</form>
+{% endif %}
+{% else %}
+<div class="limit-note"><strong>Plan non disponible</strong><p>Seuls les incidents issus d'un véritable rapport Evidently validé peuvent donner lieu à une remédiation. Les démonstrations ne sont pas éligibles.</p></div>
+{% endif %}
+{% for plan in remediation_plans %}
+<article class="recommendation"><div><h3>Plan #{{ plan.id[:8] }} — évaluation d'un candidat Iris</h3>
+<p>État : <strong>{{ plan.status }}</strong>. Action autorisée : <code>{{ plan.action }}</code>.</p>
+<p class="muted">Le traitement n'est jamais lancé automatiquement. Aucun déploiement n'est possible depuis ce plan.</p>
+{% if plan.status == 'proposed' %}
+<form method="post" action="{{ url_for('remediation_decision', incident_id=item.id, plan_id=plan.id) }}">
+<input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<label class="field-label" for="action-{{ loop.index }}">Décision spécifique à l'expérimentation</label>
+<select name="decision" id="action-{{ loop.index }}"><option value="reject">Refuser le test</option><option value="approve">Autoriser le test isolé</option></select>
+<label class="field-label" for="confirmation-{{ loop.index }}">Si vous autorisez, recopiez <code>sandbox-only</code></label>
+<input id="confirmation-{{ loop.index }}" name="confirmation" placeholder="sandbox-only" maxlength="30" autocomplete="off">
+<button type="submit" class="button primary">Enregistrer l'autorisation spécifique</button></form>
+{% endif %}
+</div></article>
+{% endfor %}
+<div class="safety-inline">ⓘ Une autorisation spécifique ne déclenche pas de réentraînement. L'opérateur lance séparément le test local en ligne de commande, après contrôle du plan. Les données de production ne sont pas modifiées.</div>
+</section>
 <section class="panel padded"><div class="section-title"><span class="section-icon blue">◷</span><div><h2>Historique des décisions</h2><p class="muted">Traçabilité des avis du réviseur</p></div></div>
 <div class="timeline">{% for decision in item.decisions %}<div class="timeline-entry"><div class="timeline-marker"></div><div class="timeline-body"><div class="timeline-head"><span class="pill {{ decision.css }}">{{ decision.label }}</span><span class="muted">{{ decision.date_display }}</span></div>
 <p>{{ decision.comment }}</p><small>Décision enregistrée par {{ decision.actor }}</small></div></div>
