@@ -19,6 +19,20 @@
 {% if item.diagnosis.get('possible_causes') %}<div class="info-row"><span>Causes possibles</span><ul class="cause-list">{% for cause in item.diagnosis.possible_causes %}<li>{{ cause }}</li>{% endfor %}</ul></div>{% endif %}
 {% if item.diagnosis.get('limitations') %}<div class="limit-note"><strong>Limites de l'analyse</strong><p>{{ item.diagnosis.limitations }}</p></div>{% endif %}
 </section>
+<section class="panel padded" id="ai-diagnostic"><div class="section-title"><span class="section-icon violet">◇</span><div><h2>Diagnostic assisté par IA</h2><p class="muted">Hypothèses explicables, sans exécution de corrections</p></div></div>
+{% if analysis %}
+<div class="diagnostic-highlight"><span class="eyebrow">HYPOTHÈSE — NON CONFIRMÉE</span><p>{{ analysis.content.probable_cause }}</p></div>
+<p>{{ analysis.content.explanation }}</p>
+<div class="info-row"><span>Niveau de confiance déclaré</span><strong>{{ analysis.content.confidence }}</strong></div>
+<div class="info-row"><span>Prochaine vérification (lecture seule)</span><strong>{{ analysis.content.next_read_only_check }}</strong></div>
+<h3>Informations manquantes</h3><ul class="cause-list">{% for gap in analysis.content.evidence_gaps %}<li>{{ gap }}</li>{% else %}<li>Non précisées</li>{% endfor %}</ul>
+<p class="muted">Analyse enregistrée le {{ analysis.created_at }}. Ce diagnostic ne prouve pas une perte de précision.</p>
+{% else %}<p class="muted">Aucune hypothèse LLM enregistrée pour cet incident.</p>{% endif %}
+{% if llm_enabled and not item.is_demo %}
+<form method="post" action="{{ url_for('ai_analyze', incident_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<button class="button primary" type="submit">Demander un diagnostic IA</button></form>
+{% else %}<div class="limit-note"><strong>Analyse LLM désactivée</strong><p>Le modèle externe est optionnel et ne sera jamais appelé sans activation explicite. Les incidents fictifs ne sont pas éligibles.</p></div>{% endif %}
+</section>
 <section class="panel padded"><div class="section-title"><span class="section-icon violet">✧</span><div><h2>Recommandations</h2><p class="muted">Actions proposées, sans exécution automatique</p></div></div>
 <div class="recommendation-list">{% for rec in item.recommendations %}
 <article class="recommendation"><div class="recommendation-index">{{ loop.index }}</div><div><h3>{{ rec.get('action', 'Action à examiner') }}</h3>
